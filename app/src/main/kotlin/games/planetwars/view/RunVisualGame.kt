@@ -5,13 +5,14 @@ import games.planetwars.agents.random.CarefulRandomAgent
 import games.planetwars.core.GameParams
 import games.planetwars.runners.GameRunner
 import games.planetwars.core.GameStateFactory
+import games.planetwars.agents.RemoteAgent
 import xkg.jvm.AppLauncher
 
 fun main() {
-    val gameParams = GameParams(numPlanets = 30, maxTicks = 1000)
+    val gameParams = GameParams(numPlanets = 30, maxTicks = 10000)
     val gameState = GameStateFactory(gameParams).createGame()
     val agent1 = CarefulRandomAgent()
-    val agent2 = BetterRandomAgent()
+    val agent2 = RemoteAgent("OneTrickAgent", port = 8765)
 
     // sub in different agents as needed
 //    val agent1 = PureRandomAgent()

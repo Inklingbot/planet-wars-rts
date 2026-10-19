@@ -63,6 +63,7 @@ By submitting an entry to any Planet Wars RTS competition, you acknowledge and a
 ## 6. Fair Play and Code of Conduct
 
 Participants must:
+
 - Submit only their own original work, or properly attributed collaborative work
 - Not attempt to exploit vulnerabilities in the competition infrastructure
 - Not submit malicious code or code designed to interfere with other submissions
@@ -78,6 +79,7 @@ Participants must:
 ## 7. Disqualification
 
 Organisers reserve the right to disqualify entries that:
+
 - Violate these terms and conditions
 - Contain malicious, harmful, or inappropriate code
 - Attempt to cheat, exploit loopholes, or manipulate the evaluation system

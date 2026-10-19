@@ -100,3 +100,7 @@ tasks.register<JavaExec>("runVisualRemote") {
     mainClass.set("games.planetwars.view.RunVisualGameWithRemoteAgentKt")
     classpath = sourceSets["main"].runtimeClasspath
 }
+tasks.register<JavaExec>("runVisualGame") {
+    mainClass.set("games.planetwars.view.RunVisualGameKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
