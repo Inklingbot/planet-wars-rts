@@ -60,6 +60,11 @@ tasks.named<ShadowJar>("shadowJar") {
     archiveVersion.set("")
 }
 
+tasks.register<JavaExec>("runRoundRobinLeague") {
+    mainClass.set("games.planetwars.runners.RoundRobinLeagueKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
 
 java {
     toolchain {

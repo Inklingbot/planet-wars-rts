@@ -83,3 +83,6 @@ __pycache__/
 *.pyc
 app/src/main/python/runner_utils/competition_entries.py
 /.venv
+
+
+/app/log_data/failed_actions.jsonl

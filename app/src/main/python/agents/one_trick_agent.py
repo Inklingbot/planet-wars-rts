@@ -7,7 +7,7 @@ class OneTrickAgent(PlanetWarsPlayer):
     def get_action(self, game_state: GameState) -> Action:
 
         my_planets = [p for p in game_state.planets
-                      if p.owner == self.player and p.transporter is None and p.n_ships > 20]
+                      if p.owner == self.player and p.transporter is None and p.n_ships > 15]
         if not my_planets:
             return Action.do_nothing()
 
@@ -15,7 +15,7 @@ class OneTrickAgent(PlanetWarsPlayer):
         if not candidate_targets:
             return Action.do_nothing()
 
-        source = min(my_planets, key=lambda p: p.n_ships)
+        source = max(my_planets, key=lambda p: p.n_ships)
 
         def target_score(target):
             distance = source.position.distance(target.position)
@@ -28,8 +28,8 @@ class OneTrickAgent(PlanetWarsPlayer):
         eta = distance / self.params.transporter_speed
         estimated_defense = target.n_ships + target.growth_rate * eta
 
-        # if source.n_ships <= estimated_defense:
-        #     return Action.do_nothing()
+        if source.n_ships <= estimated_defense:
+            return Action.do_nothing()
 
         return Action(player_id=self.player,
                       source_planet_id=source.id,
@@ -41,7 +41,7 @@ class OneTrickAgent(PlanetWarsPlayer):
 
 # Example usage
 if __name__ == "__main__":
-    agent = OneTrickAgentAgent()
+    agent = OneTrickAgent()
     agent.prepare_to_play_as(Player.Player1, GameParams())
     game_state = GameStateFactory(GameParams()).create_game()
     action = agent.get_action(game_state)

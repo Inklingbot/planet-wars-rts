@@ -51,15 +51,20 @@ WS_ERROR_BACKOFF_SECS = 60  # keep problematic agents out of the pool briefly
 # ---------- helpers ----------
 def find_gradlew(start: Optional[Path] = None) -> Path:
     start = (start or Path(__file__)).resolve()
+    wrapper_names = ("gradlew.bat", "gradlew") if os.name == "nt" else ("gradlew",)
     for parent in [start] + list(start.parents):
-        gradlew = parent / "gradlew"
-        if gradlew.is_file():
-            gradlew.chmod(gradlew.stat().st_mode | 0o111)
-            return gradlew
-    fallback = Path.home() / "GitHub" / "planet-wars-rts" / "gradlew"
-    if fallback.exists():
-        fallback.chmod(fallback.stat().st_mode | 0o111)
-        return fallback
+        for wrapper_name in wrapper_names:
+            gradlew = parent / wrapper_name
+            if gradlew.is_file():
+                if os.name != "nt":
+                    gradlew.chmod(gradlew.stat().st_mode | 0o111)
+                return gradlew
+    for wrapper_name in wrapper_names:
+        fallback = Path.home() / "GitHub" / "planet-wars-rts" / wrapper_name
+        if fallback.exists():
+            if os.name != "nt":
+                fallback.chmod(fallback.stat().st_mode | 0o111)
+            return fallback
     raise FileNotFoundError("Could not find gradlew")
 
 
@@ -232,10 +237,12 @@ def ensure_ready(agent: Agent, inst: AgentInstance, *, quick: bool = False) -> T
     """
     wait_budget = HEAL_WAIT_SECS if quick else START_WAIT_SECS
 
-    identifier = resolve_container_identifier(agent, inst)
-
+    # Local Python agents do not have a Podman container. Avoid an unnecessary
+    # container lookup when their loopback server is already available.
     if port_is_listening(inst.port):
-        return True, identifier, inst.port
+        return True, None, inst.port
+
+    identifier = resolve_container_identifier(agent, inst)
 
     if not identifier:
         ok = wait_for_port(inst.port, timeout=wait_budget)
