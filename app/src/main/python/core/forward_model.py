@@ -8,16 +8,18 @@ class ForwardModel:
     n_failed_actions = 0
     n_actions = 0
 
-    def __init__(self, state: GameState, params: GameParams):
+    def __init__(self, state: GameState, params: GameParams, record_statistics: bool = True):
         self.state = state
         self.params = params
+        self.record_statistics = record_statistics
 
     def step(self, actions: Dict[Player, Action]):
         self.apply_actions(actions)
         pending: Dict[int, Dict[Player, float]] = {}
         self.update_transporters(pending)
         self.update_planets(pending)
-        ForwardModel.n_updates += 1
+        if self.record_statistics:
+            ForwardModel.n_updates += 1
         self.state.game_tick += 1
 
     def apply_actions(self, actions: Dict[Player, Action]):
@@ -27,7 +29,8 @@ class ForwardModel:
             if not (0 <= action.source_planet_id < len(self.state.planets)) or \
                     not (0 <= action.destination_planet_id < len(self.state.planets)) or \
                     not math.isfinite(action.num_ships) or action.num_ships <= 0.0:
-                ForwardModel.n_failed_actions += 1
+                if self.record_statistics:
+                    ForwardModel.n_failed_actions += 1
                 continue
             source = self.state.planets[action.source_planet_id]
             target = self.state.planets[action.destination_planet_id]
@@ -44,9 +47,11 @@ class ForwardModel:
                     n_ships=action.num_ships
                 )
                 source.transporter = transporter
-                ForwardModel.n_actions += 1
+                if self.record_statistics:
+                    ForwardModel.n_actions += 1
             else:
-                ForwardModel.n_failed_actions += 1
+                if self.record_statistics:
+                    ForwardModel.n_failed_actions += 1
 
     def is_terminal(self) -> bool:
         if self.state.game_tick > self.params.max_ticks:
