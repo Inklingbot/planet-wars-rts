@@ -23,6 +23,7 @@ agent = MCTSAgent(
     action_generator=TacticalActionGenerator(safety_margin=1.0),
     evaluator=BoardStrengthEvaluator(BoardWeights(
         planets=1.0, growth=1.0, ships=1.0, expected_captures=1.0,
+        planets_over_10=1.0,
     )),
 )
 ```
@@ -76,7 +77,7 @@ strength, with stable candidate ordering breaking ties.
 ## Board strength
 
 All values use the searching player's perspective; there is no alternating sign.
-Four features are in [-1, 1], with equal configurable weights by default:
+Five features are in [-1, 1], with equal configurable weights by default:
 
 | Feature | Normalization |
 |---|---|
@@ -84,12 +85,17 @@ Four features are in [-1, 1], with equal configurable weights by default:
 | Growth | (own total growth - enemy total growth) / their sum |
 | Ships | (own ships - enemy ships) / their sum; includes fleets by fleet owner |
 | Expected captures | (own expected gains - own expected losses) / all planet count |
+| Planets over 10 ships | Own planets with strictly more than 10 stationed ships / all planet count |
 
 Zero denominators yield zero. Gains include neutral planets. The weighted average
 is mapped to [0, 1]. There is no separate weakness feature. Terminal states instead
 use 1/0.5/0 for win/draw/loss under the existing runner's `get_leader()` rule, which
 compares stationed ships and excludes fleets. Feature weights must be nonnegative
 and at least one must be positive.
+
+`planets_over_10` rewards each qualifying owned planet equally; exactly 10 ships
+does not qualify, and ships in flight do not count toward that planet's garrison.
+Its feature lies in [0, 1]. Set its weight to 0 to disable this reward.
 
 ## Modern options reserved for later
 

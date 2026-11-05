@@ -96,7 +96,7 @@ class TestBoardStrength(unittest.TestCase):
         # A fleet still belongs to P1 even though its source now belongs to P2.
         state.planets[1].transporter = fleet(P1, 10, 2, x=20, source=1)
         features = BoardStrengthEvaluator().features(state, P1, GameParams())
-        self.assertEqual(set(features), {"planets", "growth", "ships", "expected_captures"})
+        self.assertEqual(set(features), {"planets", "growth", "ships", "expected_captures", "planets_over_10"})
         self.assertEqual(features["planets"], 0)
         self.assertEqual(features["growth"], 0)
         self.assertAlmostEqual(features["ships"], 0.5)
@@ -112,15 +112,43 @@ class TestBoardStrength(unittest.TestCase):
 
     def test_weights_bounds_and_terminal_result(self):
         state = small_state()
-        evaluator = BoardStrengthEvaluator(BoardWeights(planets=0, growth=0, ships=1, expected_captures=0))
+        evaluator = BoardStrengthEvaluator(BoardWeights(planets=0, growth=0, ships=1,
+                                                        expected_captures=0, planets_over_10=0))
         self.assertAlmostEqual(evaluator.evaluate(state, P1, GameParams()), 0.8)
         state.game_tick = 11
         self.assertEqual(evaluator.evaluate(state, P1, GameParams(max_ticks=10)), 1)
         self.assertEqual(evaluator.evaluate(state, P2, GameParams(max_ticks=10)), 0)
         for weights in ({"ships": -1}, {"growth": math.nan},
-                        {"planets": 0, "growth": 0, "ships": 0, "expected_captures": 0}):
+                        {"planets_over_10": -1},
+                        {"planets": 0, "growth": 0, "ships": 0,
+                         "expected_captures": 0, "planets_over_10": 0}):
             with self.assertRaises(ValueError):
                 BoardWeights(**weights)
+
+    def test_planets_over_10_counts_only_owned_stationed_ships(self):
+        state = GameState(planets=[planet(0, P1, 10), planet(1, P1, 10.01),
+                                  planet(2, P1, 9.99), planet(3, P2, 20),
+                                  planet(4, NEUTRAL, 20)])
+        state.planets[0].transporter = fleet(P1, 50, 4)
+        evaluator = BoardStrengthEvaluator()
+        self.assertAlmostEqual(evaluator.features(state, P1, GameParams())["planets_over_10"], 1 / 5)
+        self.assertAlmostEqual(evaluator.features(state, P2, GameParams())["planets_over_10"], 1 / 5)
+
+    def test_planets_over_10_reward_can_be_weighted_or_disabled(self):
+        state = small_state()
+        state.planets[0].n_ships = 10
+        evaluator = BoardStrengthEvaluator(BoardWeights(
+            planets=0, growth=0, ships=0, expected_captures=0, planets_over_10=1))
+        before = evaluator.evaluate(state, P1, GameParams())
+        state.planets[0].n_ships = 10.01
+        after = evaluator.evaluate(state, P1, GameParams())
+        self.assertAlmostEqual(before, 0.5)
+        self.assertAlmostEqual(after - before, 1 / 6)
+        disabled = BoardStrengthEvaluator(BoardWeights(
+            planets=1, growth=0, ships=0, expected_captures=0, planets_over_10=0))
+        score = disabled.evaluate(state, P1, GameParams())
+        state.planets[0].n_ships = 10
+        self.assertEqual(disabled.evaluate(state, P1, GameParams()), score)
 
 
 class TestTacticalActions(unittest.TestCase):

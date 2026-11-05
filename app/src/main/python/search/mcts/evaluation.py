@@ -14,6 +14,7 @@ class BoardWeights:
     growth: float = 1.0
     ships: float = 1.0
     expected_captures: float = 1.0
+    planets_over_10: float = 1.0
 
     def __post_init__(self):
         values = asdict(self).values()
@@ -49,6 +50,8 @@ class BoardStrengthEvaluator:
             "growth": difference(total(player, "growth_rate"), total(opponent, "growth_rate")),
             "ships": difference(ships[player], ships[opponent]),
             "expected_captures": (gains - losses) / n,
+            "planets_over_10": sum(p.owner == player and p.n_ships > 10
+                                   for p in state.planets) / n,
         }
 
     def evaluate(self, state: GameState, player: Player, params: GameParams) -> float:
