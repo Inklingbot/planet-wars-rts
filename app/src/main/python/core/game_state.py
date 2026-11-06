@@ -101,7 +101,7 @@ class Transporter(CamelModel):
     owner: Player
     source_index: int
     destination_index: int
-    n_ships: float
+    n_ships: float = Field(gt=0.0, allow_inf_nan=False)
 
 
 class Planet(CamelModel):

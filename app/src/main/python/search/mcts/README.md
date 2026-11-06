@@ -152,3 +152,10 @@ change `--iterations`, `--tree-depth`, `--rollout-depth`, or `--time-limit` on t
 server command to adjust the search budget. A single iteration may exceed the
 deadline. The opponent modeled inside search remains the deterministic tactical
 policy; the actual match opponent is Better Random.
+
+## Play against the agent yourself
+
+See [Human play](../../../kotlin/games/planetwars/view/HUMAN_PLAY.md) for the
+tick-by-tick human GUI. Launch it against MCTS with
+`.\gradlew.bat :app:runHumanGame --args="--opponent mcts --port 8765"` after
+starting the Python server. Every human launch or Pass advances exactly one tick.

@@ -17,23 +17,24 @@ class GameView(
         Player.Player2,
         Player.Neutral,
     ),
+    val planetRadiusScale: Double = DEFAULT_PLANET_RADIUS_SCALE,
 ) : XApp {
+
+    init {
+        require(planetRadiusScale.isFinite() && planetRadiusScale > 0)
+    }
+
+    fun displayRadius(planet: Planet): Double = planet.radius * planetRadiusScale
 
     private val width = params.width.toDouble()
     private val height = params.height.toDouble()
 //    val gameRunner = GameRunner(gameState, params)
 
     override fun paint(xg: XGraphics) {
-        val scaleX = xg.width() / width
-        val scaleY = xg.height() / height
-        val scale = minOf(scaleX, scaleY)
-
-        val offsetX = (xg.width() / scale - width) / 2
-        val offsetY = (xg.height() / scale - height) / 2
+        val viewport = BoardViewport.fit(width, height, xg.width(), xg.height()) ?: return
 
         xg.saveTransform()
-        xg.setScale(scale, scale)
-        xg.setTranslate(offsetX, offsetY)
+        viewport.apply(xg)
 
         if (!paused) gameStep()
 
@@ -59,7 +60,7 @@ class GameView(
     private fun drawPlanets(xg: XGraphics) {
         for (planet in gameState.planets) {
             val color = colors.getColor(planet.owner)
-            val size = 2 * planet.radius
+            val size = 2 * displayRadius(planet)
             val circle = XEllipse(
                 planet.position,
                 size, size,
@@ -69,34 +70,20 @@ class GameView(
             // draw the number of ships only if we are observing for the owner
             if (planet.owner !in showInfoFor) continue
             val tStyle = TStyle(fg = colors.text, size = 14.0)
-            val text = XText("${planet.nShips.toInt()}", planet.position, tStyle)
+            val text = XText(kotlin.math.floor(planet.nShips).toLong().toString(), planet.position, tStyle)
             xg.draw(text)
         }
     }
 
     private fun drawTransporter(xg: XGraphics, transporter: Transporter) {
-        // define the shape of the ship
-//         static int[] xp = {-2, 0, 2, 0};
-//        static int[] yp = {2, -2, 2, 0};
-        val scale = 8.0
-        val points = arrayListOf(
-            Vec2d(-2.0, 2.0) * scale,
-            Vec2d(0.0, 0.0) * scale,
-            Vec2d(-2.0, -2.0) * scale,
-            Vec2d(2.0, 0.0) * scale,
-        )
-
         val color = colors.getColor(transporter.owner)
-
-        val xPoly = XPoly(transporter.s, points, XStyle(fg = color, fill = true, stroke = false))
-        xPoly.rotation = transporter.v.angle()
-        xg.draw(xPoly)
+        xg.draw(FleetMarker.shape(transporter, color))
 
         if (transporter.owner !in showInfoFor) return
 
         // draw the number of ships, but not rotated
         val tStyle = TStyle(fg = colors.text, size = 14.0)
-        val text = XText("${transporter.nShips.toInt()}", transporter.s, tStyle)
+        val text = XText(kotlin.math.floor(transporter.nShips).toLong().toString(), transporter.s, tStyle)
         xg.draw(text)
 
     }

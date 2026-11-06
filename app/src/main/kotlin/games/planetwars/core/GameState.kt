@@ -40,7 +40,9 @@ data class Transporter (
     val destinationIndex: Int,
     val nShips: Double,
 ) : RemoteConstructable{
-
+    init {
+        require(nShips.isFinite() && nShips > 0.0) { "A fleet must contain a positive, finite number of ships" }
+    }
 }
 
 @Serializable

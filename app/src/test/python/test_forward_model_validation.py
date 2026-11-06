@@ -2,7 +2,7 @@ import math
 import unittest
 
 from core.forward_model import ForwardModel
-from core.game_state import Action, GameParams, Player
+from core.game_state import Action, GameParams, Player, Transporter, Vec2d
 from core.game_state_factory import GameStateFactory
 
 
@@ -17,6 +17,23 @@ class TestForwardModelActionValidation(unittest.TestCase):
         self.model = ForwardModel(self.state, self.params)
         self.source = next(p for p in self.state.planets if p.owner == Player.Player1)
         self.target = next(p for p in self.state.planets if p.owner == Player.Player2)
+
+    def test_fleet_data_rejects_zero_negative_and_nonfinite_counts(self):
+        for ships in (0.0, -0.0, -1.0, math.nan, math.inf, -math.inf):
+            with self.subTest(ships=ships), self.assertRaises(ValueError):
+                Transporter(s=Vec2d(), v=Vec2d(x=3), owner=Player.Player1,
+                            source_index=self.source.id, destination_index=self.target.id,
+                            n_ships=ships)
+
+    def test_serialized_zero_fleet_is_rejected_but_positive_fraction_is_valid(self):
+        fleet = Transporter(s=Vec2d(), v=Vec2d(x=3), owner=Player.Player1,
+                            source_index=self.source.id, destination_index=self.target.id,
+                            n_ships=0.5)
+        data = fleet.model_dump(by_alias=True)
+        data['nShips'] = 0.0
+        with self.assertRaises(ValueError):
+            Transporter.model_validate(data)
+        self.assertEqual(Transporter.model_validate_json(fleet.model_dump_json(by_alias=True)).n_ships, 0.5)
 
     def test_invalid_actions_do_not_change_source_or_launch_transporter(self):
         initial_ships = self.source.n_ships

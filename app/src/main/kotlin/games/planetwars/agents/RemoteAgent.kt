@@ -9,12 +9,15 @@ import json_rmi.*
 import kotlinx.coroutines.*
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 class RemoteAgent(
     private val className: String,
     private val port: Int = 8080,
-    private val logger: JsonLogger = JsonLogger()
-) : PlanetWarsPlayer() {
+    private val logger: JsonLogger = JsonLogger(),
+    private val requestTimeoutMillis: Long? = null,
+    private val strictResponses: Boolean = false,
+) : PlanetWarsPlayer(), AutoCloseable {
 
     private val serverUrl = "ws://localhost:$port/ws"
     private val client = HttpClient(CIO) {
@@ -24,6 +27,20 @@ class RemoteAgent(
     private lateinit var session: DefaultClientWebSocketSession
     private lateinit var objectId: String
     private var connected = false
+    private var closed = false
+
+    private fun <T> request(block: suspend () -> T): T = runBlocking {
+        check(!closed) { "Remote agent is closed" }
+        if (requestTimeoutMillis == null) block() else withTimeout(requestTimeoutMillis) { block() }
+    }
+
+    private fun responseObject(response: String): JsonObject {
+        val parsed = json.parseToJsonElement(response).jsonObject
+        if (strictResponses && parsed["status"]?.jsonPrimitive?.content != "ok") {
+            error(parsed["error"]?.jsonPrimitive?.content ?: "Invalid remote response")
+        }
+        return parsed
+    }
 
     private suspend fun connectOnceIfNeeded() {
         if (!connected) {
@@ -33,19 +50,20 @@ class RemoteAgent(
         }
     }
 
-    override fun prepareToPlayAs(player: Player, params: GameParams, opponent: String?): String = runBlocking {
+    override fun prepareToPlayAs(player: Player, params: GameParams, opponent: String?): String = request {
         connectOnceIfNeeded()
-        invokeRemoteMethod(
+        val response = invokeRemoteMethod(
             session = session,
             objectId = objectId,
             method = "prepareToPlayAs",
             args = listOf(player, params, opponent ?: "Anonymous"),
             logger = logger
         )
-        getAgentType()
+        responseObject(response)
+        readAgentType()
     }
 
-    override fun getAction(gameState: GameState): Action = runBlocking {
+    override fun getAction(gameState: GameState): Action = request {
         connectOnceIfNeeded()
         val response = invokeRemoteMethod(
             session = session,
@@ -54,16 +72,19 @@ class RemoteAgent(
             args = listOf(gameState),
             logger = logger
         )
-        val jsonResp = json.parseToJsonElement(response).jsonObject
+        val jsonResp = responseObject(response)
         val result = jsonResp["result"]
         if (result != null && result is JsonObject) {
             json.decodeFromJsonElement(Action.serializer(), result)
         } else {
+            check(!strictResponses) { "Remote agent returned no action" }
             Action.doNothing()
         }
     }
 
-    override fun getAgentType(): String = runBlocking {
+    override fun getAgentType(): String = request { readAgentType() }
+
+    private suspend fun readAgentType(): String {
         connectOnceIfNeeded()
         val response = invokeRemoteMethod(
             session = session,
@@ -72,25 +93,46 @@ class RemoteAgent(
             args = emptyList(),
             logger = logger
         )
-        val jsonResp = json.parseToJsonElement(response).jsonObject
+        val jsonResp = responseObject(response)
         val result = jsonResp["result"]
         val type = result?.toString()?.trim('"') ?: "Remote[$className]"
-        "$type (Remote)"
+        return "$type (Remote)"
     }
 
-    override fun processGameOver(finalState: GameState) = runBlocking {
-        if (connected) {
-            invokeRemoteMethod(
-                session = session,
-                objectId = objectId,
-                method = "processGameOver",
-                args = listOf(finalState),
-                logger = logger
-            )
-            endAgent(session, objectId, logger)  // ✅ fixed argument order
-            session.close()
-            client.close()
+    override fun processGameOver(finalState: GameState) {
+        if (closed) return
+        try {
+            request {
+                if (connected) {
+                    responseObject(invokeRemoteMethod(
+                        session = session,
+                        objectId = objectId,
+                        method = "processGameOver",
+                        args = listOf(finalState),
+                        logger = logger,
+                    ))
+                }
+            }
+        } finally {
+            close()
+        }
+    }
+
+    /** Bounded, idempotent cleanup, also safe after a connection/init failure. */
+    override fun close() {
+        if (closed) return
+        closed = true
+        try {
+            runBlocking {
+                withTimeoutOrNull(1_000) {
+                    if (connected) runCatching { endAgent(session, objectId, logger) }
+                    if (::session.isInitialized) session.close()
+                }
+            }
+        } finally {
+            if (::session.isInitialized) session.cancel()
             connected = false
+            client.close()
         }
     }
 }

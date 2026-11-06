@@ -109,3 +109,13 @@ tasks.register<JavaExec>("runVisualGame") {
     mainClass.set("games.planetwars.view.RunVisualGameKt")
     classpath = sourceSets["main"].runtimeClasspath
 }
+
+tasks.register<JavaExec>("runVisualMCTS") {
+    mainClass.set("games.planetwars.view.RunVisualMCTSGameKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
+tasks.register<JavaExec>("runHumanGame") {
+    mainClass.set("games.planetwars.view.RunHumanGameKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
