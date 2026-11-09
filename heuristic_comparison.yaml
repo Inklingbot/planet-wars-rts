@@ -1,0 +1,14 @@
+# Display-only evaluator selection. This does not select an agent's evaluator.
+comparison:
+  A: ship_advantage
+  B: mcts_board_strength
+
+evaluators:
+  ship_advantage:
+    type: ship_advantage
+    label: Ship Advantage
+  mcts_board_strength:
+    type: mcts_board_strength
+    label: MCTS Board Strength
+# Add profiles of type board_strength with a weights mapping to compare custom
+# weights. The mcts_board_strength type always uses the current MCTS defaults.
