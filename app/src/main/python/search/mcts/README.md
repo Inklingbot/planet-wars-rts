@@ -159,3 +159,7 @@ See [Human play](../../../kotlin/games/planetwars/view/HUMAN_PLAY.md) for the
 tick-by-tick human GUI. Launch it against MCTS with
 `.\gradlew.bat :app:runHumanGame --args="--opponent mcts --port 8765"` after
 starting the Python server. Every human launch or Pass advances exactly one tick.
+
+Both this spectator and the human GUI support a separate display-only scoring
+service. See [Heuristic comparison](../../scoring/README.md) for the two-evaluator
+configuration, per-game JSONL histories, and CSV/plot export.

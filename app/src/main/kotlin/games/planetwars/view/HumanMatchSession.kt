@@ -4,6 +4,7 @@ import games.planetwars.agents.Action
 import games.planetwars.agents.HumanAgent
 import games.planetwars.agents.PlanetWarsAgent
 import games.planetwars.core.*
+import games.planetwars.scoring.MatchObserver
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
@@ -25,10 +26,12 @@ class HumanMatchSession(
     private val stateFactory: () -> GameState = { GameStateFactory(params).createGame() },
     private val dispatch: (() -> Unit) -> Unit = { SwingUtilities.invokeLater(it) },
     private val onUpdate: (HumanMatchSnapshot) -> Unit = {},
+    private val observer: MatchObserver? = null,
 ) : AutoCloseable {
     private val lock = Any()
     private val worker = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "human-match").apply { isDaemon = true }
+        // Keep the process alive until window-close cleanup flushes its observer.
+        Thread(runnable, "human-match")
     }
     private var closed = false
     private var activeTask: Future<*>? = null
@@ -36,6 +39,22 @@ class HumanMatchSession(
     private var model: ForwardModel? = null
     private var human = HumanAgent()
     private var opponent: PlanetWarsAgent? = null
+    private var opponentName = "Opponent"
+    private var observationActive = false
+
+    private fun observe(action: MatchObserver.() -> Unit) {
+        observer?.let { runCatching { it.action() }.onFailure { error ->
+            System.err.println("Match observation failed: ${error.message}")
+        } }
+    }
+
+    private fun endObservation(aborted: Boolean) {
+        val state = model?.state ?: return
+        if (observationActive) {
+            observationActive = false
+            observe { ended(state.deepCopy(), aborted) }
+        }
+    }
 
     @Volatile
     var snapshot = HumanMatchSnapshot()
@@ -60,7 +79,7 @@ class HumanMatchSession(
         opponent?.let { return it }
         val fresh = opponentFactory()
         opponent = fresh // Also close clients whose initialization fails.
-        fresh.prepareToPlayAs(Player.Player2, params, human.getAgentType())
+        opponentName = fresh.prepareToPlayAs(Player.Player2, params, human.getAgentType())
         return fresh
     }
 
@@ -102,6 +121,7 @@ class HumanMatchSession(
         }
 
     fun newGame(): CompletableFuture<HumanMatchSnapshot> = submitTask("Starting game…") {
+        endObservation(aborted = true)
         disposeOpponent()
         model = null
         human = HumanAgent()
@@ -109,6 +129,8 @@ class HumanMatchSession(
         val fresh = ForwardModel(stateFactory().deepCopy(), params)
         readyOpponent()
         model = fresh
+        observationActive = observer != null
+        observe { started(params, human.getAgentType(), opponentName, fresh.state.deepCopy()) }
         "Choose a source and ship count, then a destination. Or Pass to advance one tick."
     }
 
@@ -142,7 +164,9 @@ class HumanMatchSession(
             val next = ForwardModel(previous.state.deepCopy(), params)
             next.step(mapOf(Player.Player1 to own, Player.Player2 to other))
             model = next
+            observe { advanced(next.state.deepCopy()) }
             if (next.isTerminal()) {
+                endObservation(aborted = false)
                 val cleanup = runCatching { ai.processGameOver(next.state.deepCopy()) }
                 disposeOpponent()
                 "Game over. Choose New Game to play again." +
@@ -161,7 +185,11 @@ class HumanMatchSession(
             closed = true
             activeResult?.cancel(false)
             activeTask?.cancel(true)
-            worker.submit { disposeOpponent() }
+            worker.submit {
+                endObservation(aborted = !(model?.isTerminal() ?: false))
+                disposeOpponent()
+                observe { close() }
+            }
             worker.shutdown()
         }
     }

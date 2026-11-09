@@ -64,3 +64,8 @@ class BoardStrengthEvaluator:
         weights = asdict(self.weights)
         score = sum(weights[k] * features[k] for k in weights) / sum(weights.values())
         return min(1.0, max(0.0, (score + 1) / 2))
+
+
+def default_mcts_evaluator() -> BoardStrengthEvaluator:
+    """One construction path for MCTS defaults and its display-only comparison."""
+    return BoardStrengthEvaluator()

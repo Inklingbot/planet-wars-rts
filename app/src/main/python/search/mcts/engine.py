@@ -8,7 +8,7 @@ import time
 from core.forward_model import ForwardModel
 from core.game_state import Action, GameParams, GameState, Player
 from .config import MCTSConfig
-from .evaluation import BoardStrengthEvaluator
+from .evaluation import default_mcts_evaluator
 from .policies import ActionGenerator, Evaluator, OpponentPolicy
 from .tactical import DeterministicTacticalPolicy, TacticalActionGenerator
 
@@ -62,7 +62,7 @@ class MCTS:
                  opponent_policy: OpponentPolicy | None = None):
         self.config = config or MCTSConfig()
         self.action_generator = action_generator or TacticalActionGenerator()
-        self.evaluator = evaluator or BoardStrengthEvaluator()
+        self.evaluator = evaluator or default_mcts_evaluator()
         self.opponent_policy = opponent_policy or DeterministicTacticalPolicy(
             self.action_generator, self.evaluator)
         self.rng = random.Random(self.config.seed)

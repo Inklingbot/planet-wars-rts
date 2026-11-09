@@ -36,7 +36,7 @@ class AppLauncher(
         ec.xApp = app
         frame.addKeyListener(XKeyAdapter(app))
         frame.addMouseListener(XMouseAdapter(app))
-        while (true) {
+        while (frame.isDisplayable) {
             ec.repaint()
             val delay = 1000 / globFrameRate
 //            println("Delay = $delayMillis")

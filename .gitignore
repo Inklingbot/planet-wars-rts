@@ -86,3 +86,4 @@ app/src/main/python/runner_utils/competition_entries.py
 
 
 /app/log_data/failed_actions.jsonl
+/log_data/heuristics/

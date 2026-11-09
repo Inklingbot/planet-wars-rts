@@ -4,6 +4,7 @@ import games.planetwars.agents.PlanetWarsAgent
 import games.planetwars.core.GameParams
 import games.planetwars.core.GameState
 import games.planetwars.core.Player
+import games.planetwars.scoring.ComparisonTelemetry
 import util.Vec2d
 import xkg.gui.*
 import xkg.jvm.EasyComponent
@@ -36,7 +37,10 @@ class HumanMatchWindow(
     private val newGame = playbackBar.newGame
     private val status = JLabel("Starting game…")
     private val message = JTextArea(2, 50)
-    private val session = HumanMatchSession(params, opponentFactory, onUpdate = ::acceptSnapshot)
+    private val scorePanel = HeuristicScorePanel()
+    private val comparison = ComparisonTelemetry(onUpdate = scorePanel::refresh)
+    private val session = HumanMatchSession(params, opponentFactory, onUpdate = ::acceptSnapshot,
+        observer = comparison)
     private val playback = HumanMatchPlayback(session)
     private val repaintTimer = Timer(1000 / 30) { board.repaint() }
     private val playbackTimer = Timer(playback.delayMillis) {
@@ -52,7 +56,8 @@ class HumanMatchWindow(
             add(JLabel("YOU · RED     /     $opponentName · BLUE").apply {
                 font = font.deriveFont(Font.BOLD, 16f)
             }, BorderLayout.NORTH)
-            add(status, BorderLayout.SOUTH)
+            add(status, BorderLayout.CENTER)
+            add(scorePanel, BorderLayout.SOUTH)
         }
         frame.add(heading, BorderLayout.NORTH)
         board.background = Color.BLACK

@@ -99,3 +99,16 @@ rejected by both forward models and fleet data validation. Positive fractional
 fleets remain legal. Planet and fleet labels on the board show the floor of the
 actual count, so a fleet containing `0.5` ships displays as `0`. The details panel
 retains fractional counts, with amounts below its precision shown as `<0.0001`.
+
+## Heuristic comparison and history
+
+The score panel compares ship advantage with MCTS board strength for both teams.
+Start the separate scoring service on port 8766:
+
+```powershell
+$env:PYTHONPATH = 'app/src/main/python'
+python -m scoring.server --config heuristic_comparison.yaml
+```
+
+See [Scoring and history](../../../../python/scoring/README.md) for evaluator
+configuration, per-tick ship/planet statistics, reconnect recovery, and CSV/plot export.
