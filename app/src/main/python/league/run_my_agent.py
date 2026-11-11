@@ -5,7 +5,7 @@ from agents.one_trick_agent import OneTrickAgent
 
 asyncio.run(
     GameServerAgent(
-        port=9003,
+        port=8765,
         agent=OneTrickAgent(),
     ).start()
 )

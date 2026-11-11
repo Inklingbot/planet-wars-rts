@@ -15,6 +15,8 @@ from core.unified_game_runner import UnifiedGameRunner
 from agents.random_agents import PureRandomAgent, CarefulRandomAgent
 from agents.greedy_heuristic_agent import GreedyHeuristicAgent
 from agents.fully_observable_agent_adapter import as_unified
+from agents.one_trick_agent import OneTrickAgent
+from agents.defensive_circle_agent import DefensiveCircleAgent
 
 
 def main():
@@ -28,7 +30,7 @@ def main():
     # CUSTOMIZE THESE - Choose any two local Python agents
     # =============================================================================
 
-    agent1 = as_unified(PureRandomAgent())
+    agent1 = as_unified(OneTrickAgent())
     agent2 = as_unified(CarefulRandomAgent())
 
     agent1_name = "PureRandomAgent"
