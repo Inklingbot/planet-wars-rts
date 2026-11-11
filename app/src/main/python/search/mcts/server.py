@@ -1,11 +1,16 @@
-"""Serve heuristic MCTS for the Kotlin viewer's runVisualMCTS task."""
+"""Serve Planet Wars MCTS for GUI games and headless evaluation.
+
+Run with ``python -m search.mcts.server`` from the Python source path.
+"""
 
 import argparse
 import asyncio
+from dataclasses import asdict
 
 from agents.mcts_agent import MCTSAgent
 from client_server.game_agent_server import GameServerAgent
-from search.mcts import MCTSConfig
+from .config import MCTSConfig
+from scoring.heuristics import default_mcts_evaluator
 
 
 def main():
@@ -17,7 +22,20 @@ def main():
     parser.add_argument("--time-limit", type=float, default=0.05,
                         help="Soft search deadline in seconds per decision")
     parser.add_argument("--seed", type=int, default=42)
+    parser.add_argument("--evaluator", help="Evaluator profile ID from heuristic_comparison.yaml")
+    parser.add_argument("--evaluator-config", help="Optional evaluator profile YAML file")
     args = parser.parse_args()
+    if args.evaluator_config and not args.evaluator:
+        parser.error("--evaluator-config requires --evaluator")
+    evaluator = None
+    evaluator_spec = {"type": "mcts_board_strength", "weights": asdict(default_mcts_evaluator().weights)}
+    if args.evaluator:
+        from scoring.evaluators import Comparison, DEFAULT_CONFIG
+        comparison = Comparison.load(args.evaluator_config or DEFAULT_CONFIG)
+        if args.evaluator not in comparison.evaluators:
+            parser.error(f"Unknown evaluator profile: {args.evaluator}")
+        evaluator = comparison.evaluators[args.evaluator]
+        evaluator_spec = {"id": args.evaluator, **comparison.config["evaluators"][args.evaluator]}
     config = MCTSConfig(iterations=args.iterations, tree_depth=args.tree_depth,
                         rollout_depth=args.rollout_depth, seed=args.seed,
                         time_limit_seconds=args.time_limit)
@@ -26,7 +44,11 @@ def main():
     # configured constructor on that type so the server preserves this budget.
     class VisualMCTSAgent(MCTSAgent):
         def __init__(self):
-            super().__init__(config)
+            super().__init__(config, evaluator=evaluator)
+
+        def get_agent_type(self):
+            name = super().get_agent_type()
+            return f"{name} [{args.evaluator}]" if args.evaluator else name
 
         def get_action(self, game_state):
             action = super().get_action(game_state)
@@ -38,6 +60,7 @@ def main():
             return action
 
     print(f"MCTS config: {config}", flush=True)
+    print(f"MCTS evaluator: {evaluator_spec}", flush=True)
     asyncio.run(GameServerAgent(host="localhost", port=args.port, agent=VisualMCTSAgent()).start())
 
 

@@ -69,7 +69,7 @@ Start the Python server in a separate terminal:
 
 ```powershell
 $env:PYTHONPATH = 'app/src/main/python'
-python -u -m examples.mcts_server --time-limit 0.2
+python -u -m search.mcts.server --time-limit 0.2
 ```
 
 Then launch the human window:
@@ -102,7 +102,8 @@ retains fractional counts, with amounts below its precision shown as `<0.0001`.
 
 ## Heuristic comparison and history
 
-The score panel compares ship advantage with MCTS board strength for both teams.
+The score panel compares ship advantage with three-factor advantage (ships,
+ownership of all planets, and growth) for both teams by default.
 Start the separate scoring service on port 8766:
 
 ```powershell

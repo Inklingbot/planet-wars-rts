@@ -3,18 +3,17 @@
 import math
 import random
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from agents.mcts_agent import MCTSAgent
 from agents.fully_observable_agent_adapter import as_unified
 from core.forward_model import ForwardModel
 from core.game_state import Action, GameParams, GameState, Planet, Player, Transporter, Vec2d
 from core.observation import ObservationFactory
-from search.mcts import (BoardStrengthEvaluator, BoardWeights, DeterministicTacticalPolicy,
-                         MCTS, MCTSConfig, TacticalActionGenerator)
+from scoring.heuristics import BoardStrengthEvaluator, BoardWeights
+from search.mcts import DeterministicTacticalPolicy, MCTS, MCTSConfig, TacticalActionGenerator
 from search.mcts.modern import BatchedInference, ProgressiveWidening, PUCTSelection, PyTorchPolicyValue
-from search.mcts.projection import (Arrival, arrival_tick, incoming_fleets,
-                                    project_board, project_planet)
+from core.fleet_projection import Arrival, arrival_tick, incoming_fleets, project_board, project_planet
 
 P1, P2, NEUTRAL = Player.Player1, Player.Player2, Player.Neutral
 
@@ -193,8 +192,81 @@ class TestTacticalActions(unittest.TestCase):
         policy = DeterministicTacticalPolicy()
         self.assertEqual(policy.choose(state, P1, GameParams()), policy.choose(state, P1, GameParams()))
 
+    def test_terminal_tactical_candidate_bypasses_custom_heuristic(self):
+        class CustomHeuristic:
+            def evaluate(self, state, player, params):
+                if ForwardModel(state, params).is_terminal():
+                    raise AssertionError("Tactical terminal state reached the heuristic")
+                return .9
+
+        state = GameState(planets=[planet(0, P1, 20), planet(1, P2, 5, 1)])
+        action = DeterministicTacticalPolicy(evaluator=CustomHeuristic()).choose(state, P1, GameParams())
+        self.assertEqual(action.destination_planet_id, 1)
+
 
 class TestSearch(unittest.TestCase):
+    def test_terminal_outcomes_bypass_heuristics_and_backpropagate_for_both_players(self):
+        class OnlyWait:
+            def generate(self, state, player, params):
+                return [Action.do_nothing()]
+
+        class WaitOpponent:
+            def choose(self, state, player, params):
+                return Action.do_nothing()
+
+        # End either on the tree edge or one tick later inside the rollout.
+        for rollout_depth, max_ticks in ((0, 0), (1, 1)):
+            for ships1, ships2, value1 in ((20, 5, 1.0), (5, 20, 0.0), (5, 5, 0.5)):
+                for player, expected in ((P1, value1), (P2, 1 - value1)):
+                    with self.subTest(rollout=rollout_depth, ships=(ships1, ships2), player=player):
+                        state = GameState(planets=[planet(0, P1, ships1), planet(1, P2, ships2, 10)])
+                        before = state.model_dump()
+                        evaluator = Mock()
+                        evaluator.evaluate.side_effect = AssertionError("Terminal states must bypass the heuristic")
+                        result = MCTS(MCTSConfig(iterations=4, tree_depth=1, rollout_depth=rollout_depth),
+                                      OnlyWait(), evaluator, WaitOpponent()).search(
+                                          state, player, GameParams(max_ticks=max_ticks))
+                        evaluator.evaluate.assert_not_called()
+                        self.assertEqual(result.iterations, 4)
+                        self.assertEqual(result.root_actions[0].visits, 4)
+                        self.assertEqual(result.root_actions[0].mean_value, expected)
+                        self.assertEqual(state.model_dump(), before)
+
+    def test_nonterminal_leaves_still_use_custom_heuristic(self):
+        class OnlyWait:
+            def generate(self, state, player, params):
+                return [Action.do_nothing()]
+
+        class WaitOpponent:
+            def choose(self, state, player, params):
+                return Action.do_nothing()
+
+        evaluator = Mock()
+        evaluator.evaluate.return_value = .37
+        result = MCTS(MCTSConfig(iterations=4, tree_depth=1, rollout_depth=0),
+                      OnlyWait(), evaluator, WaitOpponent()).search(small_state(), P1, GameParams())
+        self.assertEqual(evaluator.evaluate.call_count, 4)
+        self.assertEqual(result.root_actions[0].mean_value, .37)
+
+    def test_elimination_win_overrides_custom_heuristic(self):
+        class WaitOpponent:
+            def choose(self, state, player, params):
+                return Action.do_nothing()
+
+        class CustomHeuristic:
+            def evaluate(self, state, player, params):
+                if ForwardModel(state, params).is_terminal():
+                    raise AssertionError("Terminal capture reached the heuristic")
+                return .9
+
+        for player in (P1, P2):
+            state = GameState(planets=[planet(0, player, 20), planet(1, player.opponent(), 5, 1)])
+            result = MCTS(MCTSConfig(iterations=8, tree_depth=1, rollout_depth=0, seed=3),
+                          evaluator=CustomHeuristic(), opponent_policy=WaitOpponent()).search(
+                              state, player, GameParams())
+            capture = next(a for a in result.root_actions if a.action.destination_planet_id == 1)
+            self.assertEqual(capture.mean_value, 1)
+
     def test_depths_visits_seed_and_input_isolation(self):
         state = small_state()
         before = state.model_dump()

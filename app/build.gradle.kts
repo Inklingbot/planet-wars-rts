@@ -116,6 +116,12 @@ tasks.register<JavaExec>("runVisualMCTS") {
     classpath = sourceSets["main"].runtimeClasspath
 }
 
+tasks.register<JavaExec>("runMctsEvaluation") {
+    workingDir = rootProject.projectDir
+    mainClass.set("games.planetwars.runners.RunMctsEvaluationKt")
+    classpath = sourceSets["main"].runtimeClasspath
+}
+
 tasks.register<JavaExec>("runHumanGame") {
     workingDir = rootProject.projectDir
     mainClass.set("games.planetwars.view.RunHumanGameKt")

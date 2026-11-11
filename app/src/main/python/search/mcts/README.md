@@ -146,7 +146,7 @@ Start the Python server in one terminal, then the existing Kotlin viewer in anot
 
 ```powershell
 $env:PYTHONPATH = 'app/src/main/python'
-python -u -m examples.mcts_server --time-limit 0.05
+python -u -m search.mcts.server --time-limit 0.05
 ```
 
 ```powershell
@@ -180,7 +180,7 @@ Start a dedicated server with the viewer's current search budget:
 
 ```powershell
 $env:PYTHONPATH = 'app/src/main/python'
-python -m examples.mcts_server --port 18765 --iterations 128 --tree-depth 20 --rollout-depth 20 --time-limit 0.05 --seed 42
+python -m search.mcts.server --port 18765 --iterations 128 --tree-depth 20 --rollout-depth 20 --time-limit 0.05 --seed 42
 ```
 
 In another terminal, run 100 games (50 maps, each played on both sides):
@@ -203,7 +203,7 @@ To compare search heuristics directly, start a second server with the three-fact
 profile injected into both its leaf evaluation and tactical opponent policy:
 
 ```powershell
-python -m examples.mcts_server --port 18766 --evaluator three_factor_advantage
+python -m search.mcts.server --port 18766 --evaluator three_factor_advantage
 ```
 
 Keep the reference/default server on 18765 and run a 10-game paired pilot. The

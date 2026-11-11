@@ -68,7 +68,7 @@ class ScoringIntegrationTest {
             runner.stepGame()
             awaitScore(telemetry, 2)
             assertEquals(2, telemetry.display.boardTick)
-            assertEquals("mcts_board_strength", telemetry.display.metadata!!["evaluators"]!!.jsonObject["B"]!!.jsonObject["id"]!!.jsonPrimitive.content)
+            assertEquals("three_factor_advantage", telemetry.display.metadata!!["evaluators"]!!.jsonObject["B"]!!.jsonObject["id"]!!.jsonPrimitive.content)
         } finally { telemetry.close(); agent.close() }
     }
 }

@@ -10,7 +10,7 @@ import java.awt.BorderLayout
 import javax.swing.SwingUtilities
 import javax.swing.WindowConstants
 
-/** Run the Python MCTS server first: python -m examples.mcts_server */
+/** Run the Python MCTS server first: python -m search.mcts.server */
 fun main() {
     val params = GameParams(numPlanets = 10, maxTicks = 2000)
     val mcts = RemoteAgent("MCTSAgent", port = 8765)

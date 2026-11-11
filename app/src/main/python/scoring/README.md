@@ -4,6 +4,10 @@ The human and MCTS spectator GUIs show two scores per team using a separate Pyth
 service. They score real board states, not search rollouts. Comparison never selects
 agent moves. Scores are in [0, 1], higher is stronger, and are not win probabilities.
 
+Evaluator implementations live in [scoring/heuristics](heuristics/README.md),
+used by both MCTS and this service. `scoring/evaluators.py` handles profile
+registration, configuration loading, metadata, and historical versions.
+
 ## Start the service and viewers
 
 From the repository root in PowerShell:
@@ -23,7 +27,7 @@ For human-versus-MCTS or the MCTS spectator, also start the existing agent serve
 
 ```powershell
 $env:PYTHONPATH = 'app/src/main/python'
-python -m examples.mcts_server --port 8765
+python -m search.mcts.server --port 8765
 ```
 
 ```powershell
@@ -42,7 +46,17 @@ IDs under `evaluators`. Both slots may select the same profile. Restart the serv
 and start New Game after changing profiles.
 
 - `ship_advantage`: own stationed + in-flight ships divided by both players' total;
-  returns 0.5 when both totals are zero. It remains a material score at game end.
+  returns 0.5 when both totals are zero in an unfinished position.
+- `three_factor_advantage`: weighted average of ship share (including fleets),
+  owned planets divided by **all planets, including neutral planets**, and owned
+  growth divided by both teams' total growth. Neutral ships and growth are excluded
+  from ship/growth shares. Zero ship/growth totals (or an empty board) use 0.5 for
+  that share. Set `weights.ships`, `weights.planets`, and
+  `weights.growth` on this profile; weights are normalized by their sum. The current
+  configuration uses 30% ships, 40% planets, and 30% growth. Profiles without weights
+  retain the original equal-weight average for historical recovery. The default comparison
+  is A: Ship Advantage versus B: Three-Factor Advantage. Since neutral planets
+  remain in the planet denominator, the two teams' scores need not sum to one.
 - `mcts_board_strength`: the same factory/default weights used by MCTS, including
   its existing terminal win/draw/loss scoring. This profile does not accept weights.
 - `board_strength`: the same formula with optional custom weights, for example:
@@ -64,6 +78,17 @@ Unknown IDs/types and invalid weights fail at startup. Comparison selection does
 not alter the MCTS configuration. If you explicitly inject a custom evaluator into
 an agent, configure a matching display profile too. Red and blue are evaluated
 independently; board-strength scores need not sum to one.
+
+All current profiles return win=1, draw=0.5, loss=0 for terminal states, even when
+called independently of MCTS. Outcomes follow the existing forward model's
+termination and stationed-ship winner rules. The MCTS engine and tactical policy
+also check terminal outcomes before calling any heuristic.
+
+Ship advantage and three-factor profiles now default to implementation version 2.
+Recorded version-1 profiles retain their original material-only terminal scoring
+when restored or explicitly selected, so offline recovery does not rewrite their
+meaning. A version change produces a new configuration hash; restart the scoring
+service and start a new game to use it.
 
 The footer identifies the scoring tick and board tick, so delayed scores cannot
 masquerade as current scores. Scoring continues catching up while gameplay is paused.

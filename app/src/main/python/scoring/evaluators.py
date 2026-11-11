@@ -10,37 +10,28 @@ import subprocess
 import yaml
 
 from core.game_state import GameParams, GameState, Player
-from search.mcts.evaluation import BoardStrengthEvaluator, BoardWeights, default_mcts_evaluator
+from .heuristics import (BoardStrengthEvaluator, BoardWeights, default_mcts_evaluator,
+                        ShipAdvantageEvaluator, ThreeFactorAdvantageEvaluator, ThreeFactorWeights,
+                        team_stats)
 
 ROOT = Path(__file__).resolve().parents[5]
 DEFAULT_CONFIG = ROOT / "heuristic_comparison.yaml"
-IMPLEMENTATION_VERSION = 1
-
-
-def team_stats(state: GameState) -> dict:
-    result = {}
-    for player in (Player.Player1, Player.Player2):
-        planets = [p for p in state.planets if p.owner == player]
-        stationed = sum(p.n_ships for p in planets)
-        flying = sum(p.transporter.n_ships for p in state.planets
-                     if p.transporter is not None and p.transporter.owner == player)
-        result[player.value] = {"planetCount": len(planets), "stationedShips": stationed,
-                                "shipsInFlight": flying, "totalShips": stationed + flying}
-    return result
-
-
-class ShipAdvantageEvaluator:
-    def evaluate(self, state: GameState, player: Player, params: GameParams) -> float:
-        stats = team_stats(state)
-        own = stats[player.value]["totalShips"]
-        enemy = stats[player.opponent().value]["totalShips"]
-        return own / (own + enemy) if own + enemy else 0.5
+IMPLEMENTATION_VERSIONS = {"ship_advantage": 2, "three_factor_advantage": 2,
+                           "board_strength": 1, "mcts_board_strength": 1}
 
 
 def _ship_advantage(spec, restore):
     if spec.get("weights"):
         raise ValueError("ship_advantage has no weights")
-    return ShipAdvantageEvaluator(), {}
+    return ShipAdvantageEvaluator(terminal_outcomes=spec["version"] >= 2), {}
+
+
+def _three_factor_advantage(spec, restore):
+    evaluator = ThreeFactorAdvantageEvaluator(ThreeFactorWeights(**spec.get("weights", {})),
+                                             terminal_outcomes=spec["version"] >= 2)
+    # Keep old profiles' metadata/hash stable for historical score recovery.
+    options = {"weights": asdict(evaluator.weights)} if "weights" in spec else {}
+    return evaluator, options
 
 
 def _board_strength(spec, restore):
@@ -57,8 +48,9 @@ def _mcts_strength(spec, restore):
     return evaluator, {"weights": asdict(evaluator.weights)}
 
 
-# Add a factory here to make another evaluator selectable in configuration.
+# Add a factory here and its current version above to expose another evaluator.
 EVALUATOR_FACTORIES = {"ship_advantage": _ship_advantage,
+                       "three_factor_advantage": _three_factor_advantage,
                        "board_strength": _board_strength,
                        "mcts_board_strength": _mcts_strength}
 
@@ -89,14 +81,16 @@ class Comparison:
             kind = spec.get("type")
             if kind not in EVALUATOR_FACTORIES:
                 raise ValueError(f"Unknown evaluator type: {kind}")
-            if spec.get("version", IMPLEMENTATION_VERSION) != IMPLEMENTATION_VERSION:
+            current_version = IMPLEMENTATION_VERSIONS[kind]
+            version = spec.get("version", current_version)
+            if type(version) is not int or version not in range(1, current_version + 1):
                 raise ValueError(f"Unsupported evaluator version for {name}")
             label = spec.get("label", name)
             if not isinstance(label, str) or not label:
                 raise ValueError("Evaluator labels must be nonempty strings")
-            evaluator, options = EVALUATOR_FACTORIES[kind](spec, restore)
+            evaluator, options = EVALUATOR_FACTORIES[kind]({**spec, "version": version}, restore)
             self.evaluators[name] = evaluator
-            resolved[name] = {"type": kind, "label": label, "version": IMPLEMENTATION_VERSION, **options}
+            resolved[name] = {"type": kind, "label": label, "version": version, **options}
         if any(not isinstance(name, str) or name not in resolved for name in slots.values()):
             raise ValueError("A and B must select known evaluator profiles")
         self.slots = dict(slots)

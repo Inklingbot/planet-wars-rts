@@ -8,7 +8,7 @@ import util.Vec2d
 import java.util.concurrent.TimeUnit
 import kotlin.test.*
 
-/** Opt in with HUMAN_MCTS_TEST_PORT pointing at a running examples.mcts_server. */
+/** Opt in with HUMAN_MCTS_TEST_PORT pointing at a running search.mcts.server. */
 class HumanMctsIntegrationTest {
     @Test
     fun `human session interoperates with Python MCTS and can restart the remote agent`() {

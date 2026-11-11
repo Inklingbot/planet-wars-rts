@@ -1,1 +1,1 @@
-"""Display-only evaluation and history tools for visual Planet Wars games."""
+"""Planet Wars heuristics, evaluator profiles, and game history tools."""
