@@ -5,9 +5,10 @@ import math
 
 from core.forward_model import ForwardModel
 from core.game_state import Action, GameParams, GameState, Player, Transporter
-from .evaluation import BoardStrengthEvaluator
+from core.terminal import terminal_value
+from core.fleet_projection import Arrival, arrival_tick, incoming_fleets, project_planet, remaining_ticks
+from scoring.heuristics import BoardStrengthEvaluator
 from .policies import ActionGenerator, Evaluator
-from .projection import Arrival, arrival_tick, incoming_fleets, project_planet, remaining_ticks
 
 
 @dataclass(frozen=True)
@@ -81,6 +82,9 @@ class DeterministicTacticalPolicy:
         def score(action):
             model = ForwardModel(state.model_copy(deep=True), params, record_statistics=False)
             model.step({player: action})
+            outcome = terminal_value(model.state, player, params)
+            if outcome is not None:
+                return outcome
             return self.evaluator.evaluate(model.state, player, params)
 
         actions = list(self.action_generator.generate(state, player, params))

@@ -5,11 +5,13 @@ iteration), random tactical rollouts for the searching player, and a determinist
 tactical opponent. Both actions are chosen from the same pre-update state and
 applied together. Each search starts a new tree. No neural dependency is required.
 
+Heuristic implementations live in [scoring/heuristics](../../scoring/heuristics/README.md).
+Fleet projections are shared game-domain code in `core/fleet_projection.py`.
+
 ```python
 from agents.mcts_agent import MCTSAgent
-from search.mcts import (
-    MCTSConfig, BoardStrengthEvaluator, BoardWeights, TacticalActionGenerator,
-)
+from search.mcts import MCTSConfig, TacticalActionGenerator
+from scoring.heuristics import BoardStrengthEvaluator, BoardWeights
 
 agent = MCTSAgent(
     config=MCTSConfig(
@@ -52,6 +54,14 @@ elapsed time, deepest tree tick, and deepest total simulated tick. Seeds reprodu
 iteration-limited searches; wall-clock limits can change completed iteration counts.
 Search randomness resets at `prepare_to_play_as`. Simulation does not mutate input
 states or add to the forward model's live-game statistics.
+
+Before backpropagation, the engine assigns terminal wins/draws/losses values of
+1/0.5/0 from the searching player's perspective. Terminal states bypass the
+configured heuristic, including custom evaluators. The tactical opponent applies
+the same rule to its one-step candidates. Built-in heuristics independently guard
+terminal states when used outside search; their fallback does not replace the
+engine's check. These outcomes follow the existing forward model's termination
+and stationed-ship winner rules.
 
 ## Fleet projection and tactical actions
 
@@ -163,3 +173,48 @@ starting the Python server. Every human launch or Pass advances exactly one tick
 Both this spectator and the human GUI support a separate display-only scoring
 service. See [Heuristic comparison](../../scoring/README.md) for the two-evaluator
 configuration, per-game JSONL histories, and CSV/plot export.
+
+## Headless evaluation against Better Random
+
+Start a dedicated server with the viewer's current search budget:
+
+```powershell
+$env:PYTHONPATH = 'app/src/main/python'
+python -m examples.mcts_server --port 18765 --iterations 128 --tree-depth 20 --rollout-depth 20 --time-limit 0.05 --seed 42
+```
+
+In another terminal, run 100 games (50 maps, each played on both sides):
+
+```powershell
+.\gradlew.bat :app:runMctsEvaluation --args="100 18765 42"
+```
+
+Arguments are game count (positive and even), server port, first map seed, and an
+optional new output directory. Uses 10 planets and the viewer's 2,000-tick limit.
+`games.jsonl`, `metadata.json`, and `summary.json` are saved under
+`log_data/mcts-evaluations/`. RPC failures stop the run and produce `error.txt`;
+they are not silently counted as losses. The 30-second RPC timeout allows a full
+search iteration to overrun the soft deadline. Better Random uses its existing
+unseeded Kotlin random generator, so map seeds alone do not reproduce the games.
+The winner follows the existing forward model's stationed-ship rule. Display-only
+heuristic comparison settings do not affect this agent's evaluation.
+
+To compare search heuristics directly, start a second server with the three-factor
+profile injected into both its leaf evaluation and tactical opponent policy:
+
+```powershell
+python -m examples.mcts_server --port 18766 --evaluator three_factor_advantage
+```
+
+Keep the reference/default server on 18765 and run a 10-game paired pilot. The
+fifth argument is the opponent server port; results are from the first port's view:
+
+```powershell
+.\gradlew.bat :app:runMctsEvaluation --args="10 18765 42 log_data/mcts-evaluations/heuristic-pilot 18766"
+```
+
+Both servers default to the same 128-iteration cap, 20 tree ticks, 20 rollout ticks,
+50 ms soft deadline, and seed 42. `--evaluator` selects a profile from the root
+`heuristic_comparison.yaml`; `--evaluator-config` can select another profile file.
+Each server prints its resolved weights at startup. Without `--evaluator`, the
+server continues to use the original MCTS heuristic regardless of display config.

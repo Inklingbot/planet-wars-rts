@@ -7,8 +7,9 @@ import time
 
 from core.forward_model import ForwardModel
 from core.game_state import Action, GameParams, GameState, Player
+from core.terminal import terminal_value
+from scoring.heuristics import default_mcts_evaluator
 from .config import MCTSConfig
-from .evaluation import default_mcts_evaluator
 from .policies import ActionGenerator, Evaluator, OpponentPolicy
 from .tactical import DeterministicTacticalPolicy, TacticalActionGenerator
 
@@ -129,7 +130,10 @@ class MCTS:
                 rollout_state = self._step(rollout_state, action, opponent_action, player, params)
                 rollout_ticks += 1
             deepest_simulated = max(deepest_simulated, depth + rollout_ticks)
-            value = self.evaluator.evaluate(rollout_state, player, params)
+            # Actual outcomes override any heuristic, including custom evaluators.
+            value = terminal_value(rollout_state, player, params)
+            if value is None:
+                value = self.evaluator.evaluate(rollout_state, player, params)
             if not math.isfinite(value) or not 0 <= value <= 1:
                 raise ValueError("Evaluator must return a finite value in [0, 1]")
             for visited in path:
