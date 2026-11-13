@@ -11,6 +11,7 @@ from core.game_state import GameParams, GameState, Player
 from core.game_state_factory import GameStateFactory
 from core.observation import ObservationFactory
 from agents.planet_wars_agent import UnifiedPlanetWarsAgent
+from core.game_replay import GameReplayLogger, agent_analysis
 
 
 class UnifiedGameRunner:
@@ -51,12 +52,15 @@ class UnifiedGameRunner:
         agent1: UnifiedPlanetWarsAgent,
         agent2: UnifiedPlanetWarsAgent,
         game_params: GameParams,
-        partial_observability: bool = False
+        partial_observability: bool = False,
+        replay_log_path=None,
     ):
         self.agent1 = agent1
         self.agent2 = agent2
         self.game_params = game_params
         self.partial_observability = partial_observability
+        self.replay_logger = GameReplayLogger(replay_log_path) if replay_log_path else None
+        self._replay_finished = False
         self.game_state: GameState = GameStateFactory(game_params).create_game()
         self.forward_model: ForwardModel = ForwardModel(
             self.game_state.model_copy(deep=True),
@@ -73,6 +77,7 @@ class UnifiedGameRunner:
         """
         self.new_game()
         while not self.forward_model.is_terminal():
+            before = self.forward_model.state.model_copy(deep=True)
             game_state = self.forward_model.state
 
             # Create observations based on observability mode
@@ -96,10 +101,12 @@ class UnifiedGameRunner:
                 Player.Player2: self.agent2.get_action(p2_observation),
             }
             self.forward_model.step(actions)
+            self._record_tick(before, actions)
 
         # Notify agents that the game is over
         self.agent1.process_game_over(self.forward_model.state)
         self.agent2.process_game_over(self.forward_model.state)
+        self._finish_replay()
 
         return self.forward_model
 
@@ -114,6 +121,23 @@ class UnifiedGameRunner:
         )
         self.agent1.prepare_to_play_as(Player.Player1, self.game_params)
         self.agent2.prepare_to_play_as(Player.Player2, self.game_params)
+        self._replay_finished = False
+        if self.replay_logger:
+            self.replay_logger.start(self.forward_model.state, self.game_params, {
+                Player.Player1: self.agent1.get_agent_type(),
+                Player.Player2: self.agent2.get_agent_type(),
+            })
+
+    def _record_tick(self, before, actions):
+        if self.replay_logger:
+            analyses = {Player.Player1: agent_analysis(self.agent1),
+                        Player.Player2: agent_analysis(self.agent2)}
+            self.replay_logger.record_tick(before, actions, self.forward_model.state, analyses)
+
+    def _finish_replay(self):
+        if self.replay_logger and not self._replay_finished:
+            self.replay_logger.finish(self.forward_model.state, self.forward_model.get_leader())
+            self._replay_finished = True
 
     def step_game(self) -> ForwardModel:
         """
@@ -123,8 +147,10 @@ class UnifiedGameRunner:
             ForwardModel with updated state
         """
         if self.forward_model.is_terminal():
+            self._finish_replay()
             return self.forward_model
 
+        before = self.forward_model.state.model_copy(deep=True)
         game_state = self.forward_model.state
 
         # Create observations based on observability mode
@@ -146,6 +172,9 @@ class UnifiedGameRunner:
             Player.Player2: self.agent2.get_action(p2_observation),
         }
         self.forward_model.step(actions)
+        self._record_tick(before, actions)
+        if self.forward_model.is_terminal():
+            self._finish_replay()
         return self.forward_model
 
     def run_games(self, n_games: int) -> Dict[Player, int]:

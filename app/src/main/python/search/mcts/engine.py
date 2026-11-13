@@ -1,6 +1,6 @@
 """UCT with one-action expansion for deterministic Planet Wars simulations."""
 
-from dataclasses import dataclass, field
+from dataclasses import asdict, dataclass, field
 import math
 import random
 import time
@@ -39,6 +39,20 @@ class ActionStatistics:
 
 
 @dataclass(frozen=True)
+class DepthStatistics:
+    depth: int
+    visits: int
+    mean_value: float
+
+
+@dataclass(frozen=True)
+class HeuristicActionValue:
+    action: Action
+    value: float
+    terms: dict[str, float]
+
+
+@dataclass(frozen=True)
 class SearchResult:
     action: Action
     iterations: int
@@ -46,6 +60,34 @@ class SearchResult:
     deepest_simulated_tick: int
     elapsed_seconds: float
     root_actions: tuple[ActionStatistics, ...]
+    depth_values: tuple[DepthStatistics, ...] = ()
+    heuristic_action_values: tuple[HeuristicActionValue, ...] = ()
+    heuristic_best_action: Action | None = None
+
+    def to_log_dict(self) -> dict:
+        return {
+            "action": self.action.model_dump(mode="json", by_alias=True),
+            "iterations": self.iterations,
+            "deepestTreeTick": self.deepest_tree_tick,
+            "deepestSimulatedTick": self.deepest_simulated_tick,
+            "elapsedSeconds": self.elapsed_seconds,
+            "rootActions": [
+                {"action": item.action.model_dump(mode="json", by_alias=True),
+                 "visits": item.visits, "meanValue": item.mean_value, "prior": item.prior}
+                for item in self.root_actions
+            ],
+            "searchValuesByDepth": [
+                {"depth": item.depth, "visits": item.visits, "meanValue": item.mean_value}
+                for item in self.depth_values
+            ],
+            "heuristicActionValues": [
+                {"action": item.action.model_dump(mode="json", by_alias=True),
+                 "value": item.value, "heuristicTerms": item.terms}
+                for item in self.heuristic_action_values
+            ],
+            "heuristicBestAction": (self.heuristic_best_action.model_dump(mode="json", by_alias=True)
+                                     if self.heuristic_best_action else None),
+        }
 
 
 class MCTS:
@@ -90,6 +132,9 @@ class MCTS:
                     if self.config.time_limit_seconds is not None else math.inf)
         root = _Node(state.model_copy(deep=True))
         completed = deepest_tree = deepest_simulated = 0
+        depth_visits: dict[int, int] = {}
+        depth_totals: dict[int, float] = {}
+        heuristic_values: list[HeuristicActionValue] = []
         if ForwardModel(root.state, params).is_terminal():
             return SearchResult(Action.do_nothing(), 0, 0, 0,
                                 time.perf_counter() - started, ())
@@ -111,6 +156,21 @@ class MCTS:
                     child = _Node(next_state, action=action,
                                   prior=1 / (len(node.untried) + len(node.children) + 1))
                     node.children.append(child)
+                    if node is root:
+                        feature_fn = getattr(self.evaluator, "features", None)
+                        features = feature_fn(next_state, player, params) if callable(feature_fn) else {}
+                        weights = getattr(self.evaluator, "weights", None)
+                        if hasattr(weights, "__dataclass_fields__"):
+                            weights = asdict(weights)
+                        terms = {}
+                        if isinstance(weights, dict):
+                            terms = {name: weights[name] * value
+                                     for name, value in features.items() if name in weights}
+                            total_weight = sum(weights.values())
+                            if total_weight:
+                                terms = {name: value / total_weight for name, value in terms.items()}
+                        heuristic_values.append(HeuristicActionValue(
+                            action, self.evaluator.evaluate(next_state, player, params), terms))
                     node = child
                     depth += 1
                     path.append(node)
@@ -136,11 +196,19 @@ class MCTS:
                 value = self.evaluator.evaluate(rollout_state, player, params)
             if not math.isfinite(value) or not 0 <= value <= 1:
                 raise ValueError("Evaluator must return a finite value in [0, 1]")
-            for visited in path:
+            for path_depth, visited in enumerate(path):
                 visited.visits += 1
                 visited.total_value += value
+                depth_visits[path_depth] = depth_visits.get(path_depth, 0) + 1
+                depth_totals[path_depth] = depth_totals.get(path_depth, 0.0) + value
             completed += 1
         best = max(root.children, key=lambda child: (child.visits, child.mean_value), default=None)
         stats = tuple(ActionStatistics(c.action, c.visits, c.mean_value, c.prior) for c in root.children)
+        depth_stats = tuple(DepthStatistics(depth, depth_visits[depth],
+                                            depth_totals[depth] / depth_visits[depth])
+                            for depth in sorted(depth_visits))
+        heuristic_best = max(heuristic_values, key=lambda item: item.value, default=None)
         return SearchResult(best.action if best else Action.do_nothing(), completed,
-                            deepest_tree, deepest_simulated, time.perf_counter() - started, stats)
+                            deepest_tree, deepest_simulated, time.perf_counter() - started, stats,
+                            depth_stats, tuple(heuristic_values),
+                            heuristic_best.action if heuristic_best else None)
