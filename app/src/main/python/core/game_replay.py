@@ -128,3 +128,9 @@ def replay_game(replay: dict, *, verify: bool = True):
             if model.state.model_dump(mode="json") != expected.model_dump(mode="json"):
                 raise ValueError(f"Replay diverged at tick {entry['tick']}")
         yield model.state.model_copy(deep=True)
+    if verify and "finalState" in replay:
+        expected_final = GameState.model_validate(replay["finalState"])
+        if model.state.model_dump(mode="json") != expected_final.model_dump(mode="json"):
+            raise ValueError("Replay final state does not match the last recorded tick")
+        if "winner" in replay and model.get_leader().value != replay["winner"]:
+            raise ValueError("Replay winner does not match its final state")

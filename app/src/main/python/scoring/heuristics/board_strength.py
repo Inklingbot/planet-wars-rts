@@ -28,6 +28,14 @@ class BoardStrengthEvaluator:
     def __init__(self, weights: BoardWeights | None = None):
         self.weights = weights or BoardWeights()
 
+    def feature_baselines(self) -> dict[str, float]:
+        return {"planets": 0.0, "growth": 0.0, "ships": 0.0,
+                "expected_captures": 0.0, "planets_over_10": 0.0}
+
+    def feature_baselines(self) -> dict[str, float]:
+        return {"planets": 0.0, "growth": 0.0, "ships": 0.0,
+                "expected_captures": 0.0, "planets_over_10": 0.0}
+
     def features(self, state: GameState, player: Player, params: GameParams) -> dict[str, float]:
         opponent = player.opponent()
         def total(owner, attribute):

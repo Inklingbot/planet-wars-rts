@@ -4,6 +4,7 @@ from dataclasses import asdict, dataclass, field
 import math
 import random
 import time
+from typing import Sequence
 
 from core.forward_model import ForwardModel
 from core.game_state import Action, GameParams, GameState, Player
@@ -125,7 +126,8 @@ class MCTS:
         return (child.mean_value + self.config.exploration_constant *
                 math.sqrt(math.log(parent_visits) / child.visits))
 
-    def search(self, state: GameState, player: Player, params: GameParams) -> SearchResult:
+    def search(self, state: GameState, player: Player, params: GameParams,
+               forced_root_actions: Sequence[Action] = ()) -> SearchResult:
         player.opponent()  # Searching as Neutral is invalid.
         started = time.perf_counter()
         deadline = (started + self.config.time_limit_seconds
@@ -149,6 +151,11 @@ class MCTS:
                     if not node.untried:
                         node.untried = [Action.do_nothing()]
                     self.rng.shuffle(node.untried)
+                    if node is root and forced_root_actions:
+                        node.untried = [action for action in node.untried
+                                        if action not in forced_root_actions]
+                        for forced_action in reversed(forced_root_actions):
+                            node.untried.append(forced_action)
                     node.opponent_action = self.opponent_policy.choose(node.state, player.opponent(), params)
                 if node.untried:
                     action = node.untried.pop()

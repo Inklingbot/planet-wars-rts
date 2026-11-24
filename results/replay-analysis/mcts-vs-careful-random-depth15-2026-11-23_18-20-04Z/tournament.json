@@ -1,0 +1,437 @@
+{
+  "schema_version": 1,
+  "name": "mcts-vs-careful-random-depth15",
+  "created_at_utc": "2026-11-23T18:20:04.808683+00:00",
+  "python_version": "3.12.10",
+  "code_revision": "ffae14d55b410edaaaac401c982375fb7ccb0921",
+  "heuristic": {
+    "profile": "mcts_board_strength",
+    "type": "mcts_board_strength",
+    "version": 1,
+    "metadata": {
+      "schemaVersion": 1,
+      "configHash": "9dd54bc32784c072128d8774fbbd8053bd68089fce4fdb3a34d41518ff7607b4",
+      "config": {
+        "comparison": {
+          "A": "selected",
+          "B": "selected"
+        },
+        "evaluators": {
+          "selected": {
+            "type": "mcts_board_strength",
+            "label": "selected",
+            "version": 1,
+            "weights": {
+              "planets": 1.0,
+              "growth": 1.0,
+              "ships": 1.0,
+              "expected_captures": 1.0,
+              "planets_over_10": 1.0
+            }
+          }
+        }
+      },
+      "evaluators": {
+        "A": {
+          "id": "selected",
+          "type": "mcts_board_strength",
+          "label": "selected",
+          "version": 1,
+          "weights": {
+            "planets": 1.0,
+            "growth": 1.0,
+            "ships": 1.0,
+            "expected_captures": 1.0,
+            "planets_over_10": 1.0
+          }
+        },
+        "B": {
+          "id": "selected",
+          "type": "mcts_board_strength",
+          "label": "selected",
+          "version": 1,
+          "weights": {
+            "planets": 1.0,
+            "growth": 1.0,
+            "ships": 1.0,
+            "expected_captures": 1.0,
+            "planets_over_10": 1.0
+          }
+        }
+      },
+      "codeRevision": "ffae14d55b410edaaaac401c982375fb7ccb0921"
+    },
+    "config_path": null
+  },
+  "sampling": {
+    "stride": 1,
+    "max_positions_per_game": null,
+    "verify_replays": true
+  },
+  "search": {
+    "algorithm": "MCTS/UCT",
+    "depth_cap_ticks": 15,
+    "iterations": 32,
+    "rollout_depth": 0,
+    "exploration_constant": 1.4142135623730951,
+    "seed": 42,
+    "opponent_policy": "MCTS default deterministic tactical policy"
+  },
+  "reliability": {
+    "method": "logistic",
+    "bins": 10,
+    "test_fraction": 0.25,
+    "split_unit": "game",
+    "seed": 42
+  },
+  "position_count": 4020,
+  "root_action_count": 4443,
+  "games": [
+    {
+      "game_id": "d58c9db4fc4764f5419e",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-01.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player1": "Heuristic UCT MCTS in Python",
+        "Player2": "Careful Random Agent"
+      },
+      "winner": "Player1",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "5b169e85da71f31061da",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-02.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player2": "Heuristic UCT MCTS in Python",
+        "Player1": "Careful Random Agent"
+      },
+      "winner": "Player2",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "3c0b3ec451588a253aba",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-03.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player1": "Heuristic UCT MCTS in Python",
+        "Player2": "Careful Random Agent"
+      },
+      "winner": "Player1",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "a5bc02bcd3d5af8ddfdc",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-04.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player2": "Heuristic UCT MCTS in Python",
+        "Player1": "Careful Random Agent"
+      },
+      "winner": "Player2",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "a5cd9734deeb842f3f45",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-05.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player1": "Heuristic UCT MCTS in Python",
+        "Player2": "Careful Random Agent"
+      },
+      "winner": "Player1",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "81b76b913176b3027457",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-06.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player2": "Heuristic UCT MCTS in Python",
+        "Player1": "Careful Random Agent"
+      },
+      "winner": "Player2",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "198ff085730ea183d1d3",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-07.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player1": "Heuristic UCT MCTS in Python",
+        "Player2": "Careful Random Agent"
+      },
+      "winner": "Player1",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "0cc0896e576aee42245a",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-08.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player2": "Heuristic UCT MCTS in Python",
+        "Player1": "Careful Random Agent"
+      },
+      "winner": "Player2",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "552c840c99ec9aa86871",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-09.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player1": "Heuristic UCT MCTS in Python",
+        "Player2": "Careful Random Agent"
+      },
+      "winner": "Player1",
+      "ticks": 201,
+      "sampled_positions": 402
+    },
+    {
+      "game_id": "b69361b4849299fe0140",
+      "replay_path": "C:\\Users\\Archibald-RA\\Documents\\planet-wars-rts\\replays\\mcts-vs-careful-random-depth15-2026-11-23_18-07-47Z\\game-10.json",
+      "replay_schema_version": 1,
+      "params": {
+        "width": 640,
+        "height": 480,
+        "edgeSeparation": 25.0,
+        "radialSeparation": 1.5,
+        "growthToRadiusFactor": 200.0,
+        "numPlanets": 10,
+        "initialNeutralRatio": 0.5,
+        "maxTicks": 200,
+        "minInitialShipsPerPlanet": 2,
+        "maxInitialShipsPerPlanet": 20,
+        "minGrowthRate": 0.02,
+        "maxGrowthRate": 0.1,
+        "transporterSpeed": 3.0,
+        "newMapEachRun": true
+      },
+      "bots": {
+        "Player2": "Heuristic UCT MCTS in Python",
+        "Player1": "Careful Random Agent"
+      },
+      "winner": "Player2",
+      "ticks": 201,
+      "sampled_positions": 402
+    }
+  ],
+  "bots": {
+    "Heuristic UCT MCTS in Python": {
+      "games": 10,
+      "wins": 10,
+      "losses": 0,
+      "draws": 0
+    },
+    "Careful Random Agent": {
+      "games": 10,
+      "wins": 0,
+      "losses": 10,
+      "draws": 0
+    }
+  },
+  "calibration": {
+    "static": {
+      "method": "logistic",
+      "score": "static_value",
+      "intercept": -1.6985896762107027,
+      "slope": 66.7154824229005,
+      "split": "game_holdout",
+      "train_game_ids": [
+        "0cc0896e576aee42245a",
+        "198ff085730ea183d1d3",
+        "3c0b3ec451588a253aba",
+        "5b169e85da71f31061da",
+        "81b76b913176b3027457",
+        "a5bc02bcd3d5af8ddfdc",
+        "b69361b4849299fe0140",
+        "d58c9db4fc4764f5419e"
+      ],
+      "test_game_ids": [
+        "552c840c99ec9aa86871",
+        "a5cd9734deeb842f3f45"
+      ],
+      "train_positions": 3216,
+      "test_positions": 804,
+      "brier": 0.27137572113570224,
+      "ece": 0.3016591393161801
+    },
+    "search": {
+      "method": "logistic",
+      "score": "search_value",
+      "intercept": -1.8534915097978848,
+      "slope": 67.39988657264328,
+      "split": "game_holdout",
+      "train_game_ids": [
+        "0cc0896e576aee42245a",
+        "198ff085730ea183d1d3",
+        "3c0b3ec451588a253aba",
+        "5b169e85da71f31061da",
+        "81b76b913176b3027457",
+        "a5bc02bcd3d5af8ddfdc",
+        "b69361b4849299fe0140",
+        "d58c9db4fc4764f5419e"
+      ],
+      "test_game_ids": [
+        "552c840c99ec9aa86871",
+        "a5cd9734deeb842f3f45"
+      ],
+      "train_positions": 3216,
+      "test_positions": 804,
+      "brier": 0.28628158851061986,
+      "ece": 0.3048432778421809
+    }
+  }
+}

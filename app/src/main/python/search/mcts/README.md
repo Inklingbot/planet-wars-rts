@@ -1,5 +1,8 @@
 # Planet Wars heuristic MCTS
 
+For offline replay datasets, calibration, regret, fixed-depth sweeps, convergence,
+and reliability calibration, see [Replay analysis](../../replay_analysis/README.md).
+
 This package implements UCT with standard expansion (one untried action per
 iteration), random tactical rollouts for the searching player, and a deterministic
 tactical opponent. Both actions are chosen from the same pre-update state and
@@ -135,6 +138,17 @@ python -m unittest discover -s app/src/test/python -p test_mcts.py -v
 python -m examples.mcts_battle --benchmark-only
 python -m examples.mcts_battle --games 2 --max-ticks 200 --opponent greedy
 ```
+
+To save a ten-game match against Careful Random with a 15-tick tree cap:
+
+```powershell
+python -m examples.mcts_battle --games 10 --max-ticks 200 --iterations 16 --tree-depth 15 --rollout-depth 20 --opponent random --seed 42 --replay-dir replays/mcts-vs-careful-random-depth15
+```
+
+`--replay-dir` creates a new UTC-stamped directory and saves one JSON replay per
+game. Sides alternate between games. For larger matches, `--workers 8` runs
+games concurrently; each game's map and Careful Random choices use seed plus
+its game index, while MCTS keeps the configured search seed.
 
 The example uses a smaller search budget than the engine defaults for quicker
 experimentation. Pure Python simulation and tactical sizing can dominate runtime;

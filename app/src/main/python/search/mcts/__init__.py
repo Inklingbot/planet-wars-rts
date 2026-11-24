@@ -5,8 +5,9 @@ from .engine import (ActionStatistics, DepthStatistics, HeuristicActionValue, MC
                      SearchResult)
 from scoring.heuristics import BoardStrengthEvaluator, BoardWeights
 from .tactical import DeterministicTacticalPolicy, TacticalActionGenerator
+from .unbiased import UnbiasedActionGenerator
 
 __all__ = ["MCTS", "MCTSConfig", "SearchResult", "ActionStatistics",
            "DepthStatistics", "HeuristicActionValue",
            "BoardStrengthEvaluator", "BoardWeights", "TacticalActionGenerator",
-           "DeterministicTacticalPolicy"]
+           "UnbiasedActionGenerator", "DeterministicTacticalPolicy"]

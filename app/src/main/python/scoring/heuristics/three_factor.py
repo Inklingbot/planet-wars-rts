@@ -30,11 +30,10 @@ class ThreeFactorAdvantageEvaluator:
         self.weights = weights or ThreeFactorWeights()
         self.terminal_outcomes = terminal_outcomes
 
-    def evaluate(self, state: GameState, player: Player, params: GameParams) -> float:
-        if self.terminal_outcomes:
-            outcome = terminal_value(state, player, params)
-            if outcome is not None:
-                return outcome
+    def feature_baselines(self) -> dict[str, float]:
+        return {"ships": 0.5, "planets": 0.5, "growth": 0.5}
+
+    def features(self, state: GameState, player: Player, params: GameParams) -> dict[str, float]:
         stats = team_stats(state)
         own = stats[player.value]
         enemy = stats[player.opponent().value]
@@ -45,6 +44,14 @@ class ThreeFactorAdvantageEvaluator:
         enemy_growth = sum(p.growth_rate for p in state.planets if p.owner == player.opponent())
         growth = own_growth + enemy_growth
         growth_share = own_growth / growth if growth else 0.5
+        return {"ships": ship_share, "planets": planet_share, "growth": growth_share}
+
+    def evaluate(self, state: GameState, player: Player, params: GameParams) -> float:
+        if self.terminal_outcomes:
+            outcome = terminal_value(state, player, params)
+            if outcome is not None:
+                return outcome
+        features = self.features(state, player, params)
         weights = self.weights
-        return (weights.ships * ship_share + weights.planets * planet_share +
-                weights.growth * growth_share) / (weights.ships + weights.planets + weights.growth)
+        return (weights.ships * features["ships"] + weights.planets * features["planets"] +
+                weights.growth * features["growth"]) / (weights.ships + weights.planets + weights.growth)

@@ -2,9 +2,10 @@
 
 from .board_strength import BoardStrengthEvaluator, BoardWeights, default_mcts_evaluator
 from .ship_advantage import ShipAdvantageEvaluator
+from .planet_score import PlanetScore, PlanetScoreWeights, score_planets
 from .stats import team_stats
 from .three_factor import ThreeFactorAdvantageEvaluator, ThreeFactorWeights
 
 __all__ = ["BoardStrengthEvaluator", "BoardWeights", "default_mcts_evaluator",
-           "ShipAdvantageEvaluator", "ThreeFactorAdvantageEvaluator", "ThreeFactorWeights",
-           "team_stats"]
+           "PlanetScore", "PlanetScoreWeights", "score_planets", "ShipAdvantageEvaluator",
+           "ThreeFactorAdvantageEvaluator", "ThreeFactorWeights", "team_stats"]
